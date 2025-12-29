@@ -2,33 +2,27 @@
 
 Tools for measuring fraud detection performance on synthetic datasets.
 
-## Automated Performance Metrics
+## Using the Grading Tools
+
+The `grading_tools.py` module provides all evaluation functions:
 
 ```python
-from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
-import pandas as pd
-import numpy as np
+from grading_tools import (
+    evaluate_detection_performance,
+    analyze_pattern_detection,
+    evaluate_multiple_submissions,
+    generate_grade_report
+)
 
-def evaluate_detection_performance(predictions_file, true_metadata_file):
-    """Calculate objective performance metrics for fraud detection."""
-    predictions = pd.read_csv(predictions_file)['is_fraud'].values
-    metadata = pd.read_csv(true_metadata_file)
-    
-    # Create true labels
-    true_labels = np.zeros(len(predictions))
-    true_labels[metadata['index']] = 1
-    
-    # Calculate metrics
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        true_labels, predictions, average='binary'
-    )
-    tn, fp, fn, tp = confusion_matrix(true_labels, predictions).ravel()
-    
-    return {
-        'precision': precision, 'recall': recall, 'f1_score': f1,
-        'true_positives': tp, 'false_positives': fp,
-        'true_negatives': tn, 'false_negatives': fn
-    }
+# Evaluate a single submission
+results = evaluate_detection_performance(
+    'student_predictions.csv',
+    'data/fraud_patterns_metadata.csv'
+)
+
+# Generate grade report
+report = generate_grade_report(results)
+print(report)
 ```
 
 ## Pattern-Specific Detection
@@ -48,18 +42,17 @@ def analyze_pattern_detection(predictions_file, metadata_file):
     return results
 ```
 
-## Usage Example
+## Command-Line Usage
 
 ```bash
-# Generate dataset with answer key
-python enhanced_data_generator.py
+# Grade a single submission
+invoke grade --submission student_predictions.csv --report
 
-# Evaluate submission
-from grading_tools import evaluate_detection_performance
-results = evaluate_detection_performance(
-    'student_submission.csv',
-    'data/fraud_patterns_metadata.csv'
-)
+# Grade all submissions in a directory
+invoke grade-all --submission-dir data/submissions
+
+# Or use directly
+python grading_tools.py predictions.csv truth.csv --report --patterns
 ```
 
 ## Metrics Interpretation

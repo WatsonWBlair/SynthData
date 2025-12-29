@@ -41,6 +41,8 @@ invoke setup         # Complete project setup
 invoke generate-fraud # Generate synthetic fraud dataset
 invoke generate-student-datasets # Generate unique datasets for multiple teams
 invoke validate      # Validate generated data quality
+invoke grade         # Grade a student submission
+invoke grade-all     # Grade all submissions in a directory
 invoke notebook      # Launch interactive Jupyter notebook
 invoke clean         # Clean generated data files
 ```

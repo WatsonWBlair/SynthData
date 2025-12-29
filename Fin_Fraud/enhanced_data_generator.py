@@ -12,7 +12,6 @@ Generates realistic institutional trading data that:
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from scipy import stats
 import random
 import os
 import uuid

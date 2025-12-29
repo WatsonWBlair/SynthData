@@ -74,6 +74,49 @@ def test(c):
 
 
 @task
+def grade(c, submission, truth="data/fraud_patterns_metadata.csv", report=False):
+    """Grade a student submission.
+    
+    Args:
+        submission: Path to student predictions CSV file
+        truth: Path to ground truth metadata (default: data/fraud_patterns_metadata.csv)
+        report: Generate full grading report (default: False)
+    """
+    print(f"Grading submission: {submission}")
+    os.chdir("Fin_Fraud")
+    
+    if report:
+        c.run(f"python grading_tools.py {submission} {truth} --report")
+    else:
+        c.run(f"python grading_tools.py {submission} {truth}")
+    
+    os.chdir("..")
+
+
+@task
+def grade_all(c, submission_dir="data/submissions", output="grading_results.csv"):
+    """Grade all student submissions in a directory.
+    
+    Args:
+        submission_dir: Directory containing student CSV files (default: data/submissions)
+        output: Output file for results (default: grading_results.csv)
+    """
+    print(f"Grading all submissions in {submission_dir}")
+    os.chdir("Fin_Fraud")
+    
+    # Use Python to run the batch grading
+    c.run(f"""python -c "
+from grading_tools import evaluate_multiple_submissions
+results = evaluate_multiple_submissions('{submission_dir}', 'data/fraud_patterns_metadata.csv', '{output}')
+print(f'\\nGraded {{len(results)}} submissions')
+print(f'Results saved to: {output}')
+"
+    """)
+    
+    os.chdir("..")
+
+
+@task
 def clean(c):
     """Clean generated data files."""
     print("Cleaning generated data...")
