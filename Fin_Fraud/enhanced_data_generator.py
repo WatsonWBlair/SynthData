@@ -15,6 +15,8 @@ from datetime import datetime, timedelta
 from scipy import stats
 import random
 import os
+import uuid
+import argparse
 from typing import Tuple, Dict, List, Optional
 
 # Configuration Constants
@@ -240,8 +242,8 @@ class DarkPoolDataGenerator:
             transaction_type = np.random.choice(self.transaction_types)
             location = np.random.choice(self.locations)
             
-            # Create transaction ID (sequential but realistic)
-            transaction_id = 1000 + i + np.random.randint(-50, 50)
+            # Create unique transaction ID using UUID
+            transaction_id = str(uuid.uuid4())
             
             transaction = {
                 'Timestamp': timestamp,
@@ -272,72 +274,159 @@ class DarkPoolDataGenerator:
         
         return df, fraud_metadata
     
-    def generate_student_dataset(self, num_transactions: int = DEFAULT_TRANSACTIONS, 
-                                fraud_rate: float = DEFAULT_FRAUD_RATE,
-                                difficulty: str = 'intermediate') -> pd.DataFrame:
+    def generate_student_datasets(self, num_datasets: int = 1,
+                                 num_transactions: int = DEFAULT_TRANSACTIONS, 
+                                 fraud_rate: float = DEFAULT_FRAUD_RATE,
+                                 base_seed: int = 42) -> Dict[str, List[str]]:
         """
-        Generate dataset for students WITHOUT fraud labels
+        Generate multiple unique datasets for different student teams.
         
         Args:
-            num_transactions: Number of transactions to generate
+            num_datasets: Number of unique datasets to generate
+            num_transactions: Number of transactions per dataset
             fraud_rate: Percentage of fraudulent transactions
-            difficulty: 'beginner' (obvious), 'intermediate', 'advanced' (subtle)
+            base_seed: Base random seed (each dataset uses base_seed + index)
             
         Returns:
-            DataFrame with unlabeled transaction data for student analysis
+            Dictionary with lists of generated data files and answer keys
         """
-        # Adjust fraud rate based on difficulty
-        difficulty_rates = {
-            'beginner': min(fraud_rate * 2, 0.1),  # More obvious patterns
-            'intermediate': fraud_rate,
-            'advanced': fraud_rate * 0.5  # Subtle patterns
+        data_dir = './data'
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        
+        # Create subdirectory for student datasets
+        student_dir = os.path.join(data_dir, 'student_datasets')
+        if not os.path.exists(student_dir):
+            os.makedirs(student_dir)
+        
+        generated_files = {
+            'data_files': [],
+            'answer_keys': [],
+            'mapping': []
         }
         
-        actual_fraud_rate = difficulty_rates.get(difficulty, fraud_rate)
+        print(f"\nGenerating {num_datasets} unique student datasets...")
         
-        # Generate full dataset
-        df, fraud_metadata = self.generate_enhanced_dataset(num_transactions, actual_fraud_rate)
+        for i in range(num_datasets):
+            # Use different seed for each dataset
+            seed = base_seed + i
+            team_id = f"{i+1:03d}"  # Format: 001, 002, etc.
+            
+            print(f"Generating dataset for Team {team_id} (seed={seed})...")
+            
+            # Create new generator with unique seed
+            generator = DarkPoolDataGenerator(random_seed=seed)
+            
+            # Generate unique dataset
+            df, fraud_metadata = generator.generate_enhanced_dataset(num_transactions, fraud_rate)
+            
+            # Save student data (without labels)
+            data_file = os.path.join(student_dir, f'team_{team_id}_data.csv')
+            df.to_csv(data_file, index=False)
+            generated_files['data_files'].append(data_file)
+            
+            # Save answer key (for instructor only)
+            answer_file = os.path.join(student_dir, f'answer_key_{team_id}.csv')
+            fraud_df = pd.DataFrame(fraud_metadata)
+            fraud_df.to_csv(answer_file, index=False)
+            generated_files['answer_keys'].append(answer_file)
+            
+            # Add to mapping
+            generated_files['mapping'].append({
+                'team_id': team_id,
+                'data_file': data_file,
+                'answer_key': answer_file,
+                'seed': seed,
+                'transactions': num_transactions,
+                'fraud_rate': fraud_rate
+            })
         
-        # Store metadata separately for teacher reference
-        fraud_df = pd.DataFrame(fraud_metadata)
-        teacher_file = f'./data/teacher_answer_key_{difficulty}.csv'
-        fraud_df.to_csv(teacher_file, index=False)
-        print(f"Teacher answer key saved to: {teacher_file} (DO NOT SHARE WITH STUDENTS)")
+        # Save master mapping file for instructor
+        mapping_df = pd.DataFrame(generated_files['mapping'])
+        mapping_file = os.path.join(student_dir, 'dataset_mapping.csv')
+        mapping_df.to_csv(mapping_file, index=False)
         
-        # Return unlabeled data for students
-        return df
+        print(f"\n✅ Generated {num_datasets} unique datasets")
+        print(f"📁 Student data files in: {student_dir}/team_XXX_data.csv")
+        print(f"🔑 Answer keys in: {student_dir}/answer_key_XXX.csv")
+        print(f"📋 Mapping file: {mapping_file}")
+        print("\n⚠️  Keep answer keys and mapping file secure!")
+        
+        return generated_files
 
-def generate_enhanced_data():
-    """
-    Main function to generate enhanced dataset
-    """
-    generator = DarkPoolDataGenerator(random_seed=42)
+
+def main():
+    """Main function with CLI support."""
+    parser = argparse.ArgumentParser(
+        description='Generate synthetic financial fraud datasets for education',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  # Generate default dataset
+  python enhanced_data_generator.py
+  
+  # Generate with custom parameters
+  python enhanced_data_generator.py --transactions 100000 --fraud-rate 0.05
+  
+  # Generate multiple student datasets
+  python enhanced_data_generator.py --student-datasets 10 --transactions 50000
+        ''')
     
-    # Generate enhanced dataset
-    enhanced_df, fraud_metadata = generator.generate_enhanced_dataset(
-        num_transactions=216960, 
-        fraud_rate=0.02  # 2% fraud rate for educational purposes
-    )
+    parser.add_argument('--transactions', type=int, default=DEFAULT_TRANSACTIONS,
+                      help=f'Number of transactions to generate (default: {DEFAULT_TRANSACTIONS})')
+    parser.add_argument('--fraud-rate', type=float, default=DEFAULT_FRAUD_RATE,
+                      help=f'Fraud rate as decimal (default: {DEFAULT_FRAUD_RATE})')
+    parser.add_argument('--seed', type=int, default=42,
+                      help='Random seed for reproducibility (default: 42)')
+    parser.add_argument('--student-datasets', type=int, default=0,
+                      help='Generate N unique datasets for students (default: 0 = single dataset)')
     
-    # Use relative paths for portability
-    data_dir = './data'
+    args = parser.parse_args()
     
-    # Create data directory if it doesn't exist
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    # Validate arguments
+    if not 1000 <= args.transactions <= 10000000:
+        parser.error('Transactions must be between 1,000 and 10,000,000')
+    if not 0.0 <= args.fraud_rate <= 0.5:
+        parser.error('Fraud rate must be between 0.0 and 0.5')
+    if args.student_datasets < 0:
+        parser.error('Number of student datasets must be non-negative')
     
-    # Save enhanced raw data
-    output_path = os.path.join(data_dir, 'enhanced_raw_data.csv')
-    enhanced_df.to_csv(output_path, index=False)
-    print(f"Enhanced dataset saved to: {output_path}")
-    
-    # Save fraud metadata for validation
-    fraud_df = pd.DataFrame(fraud_metadata)
-    fraud_path = os.path.join(data_dir, 'fraud_patterns_metadata.csv')
-    fraud_df.to_csv(fraud_path, index=False)
-    print(f"Fraud metadata saved to: {fraud_path}")
-    
-    return enhanced_df, fraud_metadata
+    if args.student_datasets > 0:
+        # Generate multiple unique student datasets
+        generator = DarkPoolDataGenerator(random_seed=args.seed)
+        generator.generate_student_datasets(
+            num_datasets=args.student_datasets,
+            num_transactions=args.transactions,
+            fraud_rate=args.fraud_rate,
+            base_seed=args.seed
+        )
+    else:
+        # Generate single dataset
+        generator = DarkPoolDataGenerator(random_seed=args.seed)
+        
+        print(f"Generating {args.transactions:,} transactions with {args.fraud_rate*100:.1f}% fraud rate...")
+        enhanced_df, fraud_metadata = generator.generate_enhanced_dataset(
+            num_transactions=args.transactions,
+            fraud_rate=args.fraud_rate
+        )
+        
+        # Save data
+        data_dir = './data'
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        
+        # Save transaction data
+        output_path = os.path.join(data_dir, 'enhanced_raw_data.csv')
+        enhanced_df.to_csv(output_path, index=False)
+        print(f"\n✅ Dataset saved to: {output_path}")
+        
+        # Save fraud metadata
+        fraud_df = pd.DataFrame(fraud_metadata)
+        fraud_path = os.path.join(data_dir, 'fraud_patterns_metadata.csv')
+        fraud_df.to_csv(fraud_path, index=False)
+        print(f"🔑 Answer key saved to: {fraud_path}")
+        
+        return enhanced_df, fraud_metadata
 
 if __name__ == "__main__":
-    enhanced_data, fraud_info = generate_enhanced_data()
+    main()

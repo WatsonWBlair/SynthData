@@ -13,18 +13,38 @@ def install(c):
 
 
 @task
-def generate_fraud(c, transactions=216960, fraud_rate=0.02):
+def generate_fraud(c, transactions=216960, fraud_rate=0.02, seed=42):
     """Generate synthetic financial fraud dataset.
     
     Args:
         transactions: Number of transactions to generate (default: 216960)
         fraud_rate: Percentage of fraudulent transactions (default: 0.02)
+        seed: Random seed for reproducibility (default: 42)
     """
     print(f"Generating {transactions} transactions with {fraud_rate*100}% fraud rate...")
     os.chdir("Fin_Fraud")
-    c.run(f"python enhanced_data_generator.py --transactions {transactions} --fraud-rate {fraud_rate}")
+    c.run(f"python enhanced_data_generator.py --transactions {transactions} --fraud-rate {fraud_rate} --seed {seed}")
     os.chdir("..")
     print("Dataset generated successfully!")
+
+
+@task
+def generate_student_datasets(c, count=10, transactions=50000, fraud_rate=0.02, seed=42):
+    """Generate multiple unique datasets for different student teams.
+    
+    Args:
+        count: Number of unique datasets to generate (default: 10)
+        transactions: Number of transactions per dataset (default: 50000)
+        fraud_rate: Percentage of fraudulent transactions (default: 0.02)
+        seed: Base random seed (each dataset uses seed + index) (default: 42)
+    """
+    print(f"Generating {count} unique student datasets...")
+    print(f"Each dataset: {transactions} transactions, {fraud_rate*100}% fraud rate")
+    os.chdir("Fin_Fraud")
+    c.run(f"python enhanced_data_generator.py --student-datasets {count} --transactions {transactions} --fraud-rate {fraud_rate} --seed {seed}")
+    os.chdir("..")
+    print(f"\n✅ Generated {count} unique datasets for student teams!")
+    print("📁 Check Fin_Fraud/data/student_datasets/ for files")
 
 
 @task

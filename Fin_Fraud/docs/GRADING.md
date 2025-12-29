@@ -69,6 +69,22 @@ results = evaluate_detection_performance(
 - **F1 Score**: Balance between precision and recall
 - **Pattern Detection**: Success rate for each fraud type
 
+## Multiple Student Datasets
+
+Generate unique datasets to prevent copying:
+
+```bash
+# Generate 20 unique datasets for different teams
+invoke generate-student-datasets --count 20
+
+# Files created:
+# - data/student_datasets/team_001_data.csv (for Team 1)
+# - data/student_datasets/answer_key_001.csv (instructor only)
+# - data/student_datasets/dataset_mapping.csv (master list)
+```
+
+Each dataset has the same parameters but different random patterns, ensuring fair comparison while preventing direct result sharing.
+
 ## Grading Considerations
 
 Objective metrics provide only part of the assessment. Also consider:

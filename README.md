@@ -39,9 +39,19 @@ This creates synthetic financial transaction data with realistic fraud patterns 
 invoke --list         # Show all available tasks
 invoke setup         # Complete project setup
 invoke generate-fraud # Generate synthetic fraud dataset
+invoke generate-student-datasets # Generate unique datasets for multiple teams
 invoke validate      # Validate generated data quality
 invoke notebook      # Launch interactive Jupyter notebook
 invoke clean         # Clean generated data files
+```
+
+### Generate Multiple Student Datasets
+```bash
+# Generate 10 unique datasets for student teams
+invoke generate-student-datasets --count 10
+
+# Custom parameters
+invoke generate-student-datasets --count 20 --transactions 100000 --fraud-rate 0.03
 ```
 
 ## Project Structure

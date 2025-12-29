@@ -1,7 +1,11 @@
-pandas>=1.3.0
-numpy>=1.21.0
+pandas>=2.0.0
+numpy>=1.24.0,<2.0.0
 scipy>=1.7.0
 matplotlib>=3.4.0
 jupyter>=1.0.0
 seaborn>=0.11.0
 invoke>=1.6.0
+
+# Note: NumPy is pinned to <2.0.0 for compatibility.
+# If you have NumPy 2.x installed, you may need to:
+# pip install --upgrade pandas numpy<2
