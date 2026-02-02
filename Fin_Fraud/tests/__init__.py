@@ -1,0 +1,1 @@
+"""Test suite for Financial Fraud Detection synthetic data generator."""
